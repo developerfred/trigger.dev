@@ -1,5 +1,5 @@
 import { cp, copyFile, mkdir } from "node:fs/promises";
-import { dirname, join, posix, relative } from "node:path";
+import { dirname, join, relative, sep } from "node:path";
 import { glob } from "tinyglobby";
 
 /**
@@ -44,9 +44,9 @@ export async function findFilesByMatchers(
 
     const assets: CopyPair[] = files.map((file) => {
       const pathInsideDestinationDir = relative(cwd, file)
-        .split(posix.sep)
+        .split(sep)
         .filter((p) => p !== "..")
-        .join(posix.sep);
+        .join(sep);
       return {
         source: file,
         destination: join(destinationDir, pathInsideDestinationDir),

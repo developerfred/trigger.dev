@@ -4,6 +4,7 @@ import { BuildManifest, BuildTarget, TaskFile } from "@trigger.dev/core/v3/schem
 import * as esbuild from "esbuild";
 import { createHash } from "node:crypto";
 import { basename, join, relative, resolve } from "node:path";
+import { resolveExtraCACertsImagePath } from "../deploy/buildImage.js";
 import { createFile, createFileWithStore } from "../utilities/fileSystem.js";
 import { logger } from "../utilities/logger.js";
 import { resolveFileSources } from "../utilities/sourceFiles.js";
@@ -404,6 +405,10 @@ export async function createBuildManifestFromBundle({
     config: {
       project: resolvedConfig.project,
       dirs: resolvedConfig.dirs,
+      extraCACerts: resolveExtraCACertsImagePath(
+        resolvedConfig.extraCACerts,
+        resolvedConfig.workingDir
+      ),
     },
     outputPath: destination,
     indexControllerEntryPoint:

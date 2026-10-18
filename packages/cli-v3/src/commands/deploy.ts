@@ -50,7 +50,7 @@ import {
 } from "../cli/common.js";
 import { loadConfig } from "../config.js";
 import { authenticateForDeploy, userIdForDeploy } from "../deploy/auth.js";
-import { buildImage, resolveExtraCACertsImagePath } from "../deploy/buildImage.js";
+import { buildImage } from "../deploy/buildImage.js";
 import {
   checkLogsForErrors,
   checkLogsForWarnings,
@@ -765,10 +765,7 @@ async function _deployCommand(dir: string, options: DeployCommandOptions) {
     externalBuildProjectId: deployment.externalBuildData?.projectId,
     projectId: projectClient.id,
     projectRef: resolvedConfig.project,
-    extraCACerts: resolveExtraCACertsImagePath(
-      resolvedConfig.extraCACerts,
-      resolvedConfig.workingDir
-    ),
+    extraCACerts: buildManifest.config.extraCACerts,
     apiUrl: projectClient.client.apiURL,
     apiKey: projectClient.client.accessToken!,
     apiClient: projectClient.client,
@@ -1670,11 +1667,17 @@ async function handleLocalBundleDeploy({
   const bundleOutputPath = destination.path;
 
   // Extensions can set undefined values at runtime despite the manifest type
-  const bundleBuildEnvVars = Object.fromEntries(
-    Object.entries(buildManifest.build.env ?? {}).filter(
-      (entry): entry is [string, string] => typeof entry[1] === "string"
-    )
-  );
+  const bundleBuildEnvVars: Record<string, string> = {
+    ...Object.fromEntries(
+      Object.entries(buildManifest.build.env ?? {}).filter(
+        (entry): entry is [string, string] => typeof entry[1] === "string"
+      )
+    ),
+    // The Containerfile reads NODE_EXTRA_CA_CERTS as a build arg, which the build server passes through
+    ...(buildManifest.config.extraCACerts
+      ? { NODE_EXTRA_CA_CERTS: buildManifest.config.extraCACerts }
+      : {}),
+  };
 
   if (options.dryRun) {
     logger.info(`Dry run complete. View the built bundle at ${destination.path}`);
@@ -1911,6 +1914,7 @@ async function buildAndFinalizeFromBundle({
   authAccessToken,
   compilationPath,
   buildEnvVars,
+  extraCACerts,
   branch,
   isLocalBuild,
 }: {
@@ -1923,6 +1927,7 @@ async function buildAndFinalizeFromBundle({
   authAccessToken: string;
   compilationPath: string;
   buildEnvVars: Record<string, string | undefined> | undefined;
+  extraCACerts: string | undefined;
   branch: string | undefined;
   isLocalBuild: boolean;
 }) {
@@ -1975,6 +1980,7 @@ async function buildAndFinalizeFromBundle({
     externalBuildProjectId: deployment.externalBuildData?.projectId,
     projectId,
     projectRef,
+    extraCACerts,
     apiUrl: apiClient.apiURL,
     apiKey: apiClient.accessToken!,
     apiClient,
@@ -2343,6 +2349,7 @@ async function handleFromBundleDeploy({
     authAccessToken: auth.accessToken,
     compilationPath: bundlePath,
     buildEnvVars,
+    extraCACerts: bundleManifest.config.extraCACerts,
     branch,
     isLocalBuild: true,
   });

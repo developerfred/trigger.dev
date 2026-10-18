@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import path, { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { BuildRuntime } from "@trigger.dev/core/v3/schemas";
 import { describe, expect, it } from "vitest";
@@ -65,6 +65,15 @@ describe("resolveExtraCACertsImagePath", () => {
 
   it("strips leading parent segments the same way additionalFiles does", () => {
     expect(resolveExtraCACertsImagePath("../shared/ca.crt", "/project")).toBe("/app/shared/ca.crt");
+  });
+
+  it("handles Windows separators", () => {
+    expect(resolveExtraCACertsImagePath("../shared/ca.crt", "C:\\project", path.win32)).toBe(
+      "/app/shared/ca.crt"
+    );
+    expect(resolveExtraCACertsImagePath("./certs/ca.crt", "C:\\project", path.win32)).toBe(
+      "/app/certs/ca.crt"
+    );
   });
 });
 

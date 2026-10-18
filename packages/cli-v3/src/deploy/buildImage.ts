@@ -3,7 +3,7 @@ import { depot } from "@depot/cli";
 import { x } from "tinyexec";
 import type { BuildManifest, BuildRuntime } from "@trigger.dev/core/v3/schemas";
 import { networkInterfaces } from "os";
-import { join, relative, resolve, sep } from "path";
+import path, { join } from "path";
 import { safeReadJSONFile } from "../utilities/fileSystem.js";
 import { readFileSync } from "fs";
 
@@ -59,13 +59,18 @@ export interface BuildImageOptions {
  * Where the CA file ends up inside the image. The build copies it into /app using the same layout
  * as additionalFiles (path relative to the project root, with leading `..` segments stripped).
  */
-export function resolveExtraCACertsImagePath(extraCACerts: string | undefined, workingDir: string) {
+export function resolveExtraCACertsImagePath(
+  extraCACerts: string | undefined,
+  workingDir: string,
+  pathApi: Pick<typeof path, "relative" | "resolve" | "sep"> = path
+) {
   if (!extraCACerts) {
     return undefined;
   }
 
-  const relativePath = relative(workingDir, resolve(workingDir, extraCACerts))
-    .split(sep)
+  const relativePath = pathApi
+    .relative(workingDir, pathApi.resolve(workingDir, extraCACerts))
+    .split(pathApi.sep)
     .filter((segment) => segment !== "..")
     .join("/");
 
